@@ -13,6 +13,7 @@
 #include <time.h>
 //
 #include "gl_frontEnd.h"
+#include "robot.h"
 
 //==================================================================================
 //	Function prototypes
@@ -21,7 +22,8 @@ void displayGridPane(void);
 void displayStatePane(void);
 void initializeApplication(void);
 int assignLoc(int, int, int, int**, int[][2]);
-
+//
+void tick(Robot*);
 
 //==================================================================================
 //	Application-level global variables
@@ -58,8 +60,10 @@ const int MAX_NUM_MESSAGES = 8;
 const int MAX_LENGTH_MESSAGE = 32;
 char** message;
 
-// Simulation's output file
+//  Simulation's output file
 FILE* fp;
+//  Robots
+Robot* robot;
 
 //==================================================================================
 //	These are the functions that tie the simulation with the rendering.
@@ -293,6 +297,64 @@ void initializeApplication(void)
     
     for (int k=0; k<numBoxes; k++)
         doorAssign[k] = rand() % numDoors;
+    
+    robot = (Robot*) malloc(sizeof(Robot) * numBoxes);
+    for (int k = 0; k<numBoxes; k++)
+    {
+        robot->boxID = k;
+        robot->dx_bd = doorLoc[doorAssign[k]][0] - boxLoc[k][0];
+        robot->dy_bd = doorLoc[doorAssign[k]][1] - boxLoc[k][1];
+        robot->loc = robotLoc[k];
+        robot->boxLoc = boxLoc[k];
+        
+        //  decide starting push direction (x direction is prioritized)
+        //
+        if (robot->dx_bd < 0)       //  door is westward -dx
+            robot->boxDir = WEST;
+        else if (robot->dx_bd > 0)  //  door is eastward +dx
+            robot->boxDir = EAST;
+        else
+        {
+            if (robot->dy_bd < 0)   //  door is southward -dy
+                robot->boxDir = SOUTH;
+            else                    //  door is northward +dy
+                robot->boxDir = NORTH;
+        }
+        
+        //  calculate delta x & y for robot's initial travel to box
+        //
+        switch (robot->boxDir)
+        {
+            case NORTH:
+                robot->dx_rb = boxLoc[k][0] - robotLoc[k][0];
+                robot->dy_rb = boxLoc[k][1] - robotLoc[k][1] - 1;   //  get on bottom side
+                break;
+            case WEST:
+                robot->dx_rb = boxLoc[k][0] - robotLoc[k][0] + 1;   //  get on right side
+                robot->dy_rb = boxLoc[k][1] - robotLoc[k][1];
+                break;
+            case SOUTH:
+                robot->dx_rb = boxLoc[k][0] - robotLoc[k][0];
+                robot->dy_rb = boxLoc[k][1] - robotLoc[k][1] + 1;   //  get on top side
+                break;
+            case EAST:
+                robot->dx_rb = boxLoc[k][0] - robotLoc[k][0] - 1;   //  get on left side
+                robot->dy_rb = boxLoc[k][1] - robotLoc[k][1];
+                break;
+        }
+        
+        //  DEBUG
+//        fprintf(stderr, "box %d direction: %d\n", k, robot->boxDir);
+//        fprintf(stderr, "box %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_bd, robot->dy_bd);
+//        fprintf(stderr, "robot %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_rb, robot->dy_rb);
+//        fprintf(stderr, "robotLoc: {%d, %d}\n", robotLoc[k][0], robotLoc[k][1]);
+//        fprintf(stderr, "boxLoc: {%d, %d}\n\n", boxLoc[k][0], boxLoc[k][1]);
+    }
+}
+
+void tick(Robot* robot)
+{
+    
 }
 
 int assignLoc(int objectCount, int entries, int padding, int **loc, int acquiredLoc[][2])
