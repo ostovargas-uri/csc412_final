@@ -14,7 +14,6 @@
 //
 #include "gl_frontEnd.h"
 
-extern int** grid;
 extern int numRows;
 extern int numCols;
 
@@ -26,6 +25,7 @@ typedef struct Robot {
     int dy_bd;      //  delta between box and door -- y
     int* loc;       //  robot location
     int* boxLoc;    //  door location
+    Direction dir;
     Direction boxDir;   //  direction box needs to be pushed
 } Robot;
 

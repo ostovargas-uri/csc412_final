@@ -297,6 +297,21 @@ void initializeApplication(void)
     
     for (int k=0; k<numBoxes; k++)
         doorAssign[k] = rand() % numDoors;
+  
+    //  TEST: X Align
+//    robotLoc[0][0] = 1;
+//    robotLoc[0][1] = 1;
+//    boxLoc[0][0] = 2;
+//    boxLoc[0][1] = 1;
+//    doorLoc[0][0] = 0;
+//    doorLoc[0][1] = 1;
+    //  TEST: Y Align
+//    robotLoc[0][0] = 1;
+//    robotLoc[0][1] = 1;
+//    boxLoc[0][0] = 1;
+//    boxLoc[0][1] = 2;
+//    doorLoc[0][0] = 1;
+//    doorLoc[0][1] = 0;
     
     robot = (Robot*) malloc(sizeof(Robot) * numBoxes);
     for (int k = 0; k<numBoxes; k++)
@@ -349,6 +364,20 @@ void initializeApplication(void)
 //        fprintf(stderr, "robot %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_rb, robot->dy_rb);
 //        fprintf(stderr, "robotLoc: {%d, %d}\n", robotLoc[k][0], robotLoc[k][1]);
 //        fprintf(stderr, "boxLoc: {%d, %d}\n\n", boxLoc[k][0], boxLoc[k][1]);
+        
+        if (robot->dx_rb < 0)       //  door is westward -dx
+            robot->dir = WEST;
+        else if (robot->dx_rb > 0)  //  door is eastward +dx
+            robot->dir = EAST;
+        else
+        {
+            if (robot->dy_rb < 0)   //  door is southward -dy
+                robot->dir = SOUTH;
+            else                    //  door is northward +dy
+                robot->dir = NORTH;
+        }
+        
+//        fprintf(stderr, "robot %d direction: %d\n", k, robot->dir);
     }
 }
 
