@@ -17,20 +17,30 @@
 extern int numRows;
 extern int numCols;
 
+typedef enum Mode {
+    X = 1,
+    Y = 2,
+    MOVE = 4,
+    PUSH = 8
+} Mode;
+
 typedef struct Robot {
-    int boxID;  //  keep track of robot/box location
+    int id;  //  keep track of robot/box location
     int dx_rb;      //  delta between robot and box -- x
     int dy_rb;      //  delta between robot and box -- y
     int dx_bd;      //  delta between box and door -- x
     int dy_bd;      //  delta between box and door -- y
-    int* loc;       //  robot location
-    int* boxLoc;    //  door location
     Direction dir;
     Direction boxDir;   //  direction box needs to be pushed
+    int mode;
 } Robot;
 
-void move(Direction);
-void push(Direction);
+Direction setDir(int, int);
+void setAxis(Robot*);
+void adjust(Robot*);
+Direction turn(Mode, int);
+void move(Robot*);
+void push(Robot*);
 void end();
 void *start(void*); //  multi-threaded
 

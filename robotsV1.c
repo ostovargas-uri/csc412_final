@@ -63,7 +63,8 @@ char** message;
 //  Simulation's output file
 FILE* fp;
 //  Robots
-Robot* robot;
+Robot* robots;
+const char* directions = "NWSE";
 
 //==================================================================================
 //	These are the functions that tie the simulation with the rendering.
@@ -83,14 +84,20 @@ void displayGridPane(void)
 	//	Here I hard-code myself some data for robots and doors.  Obviously this code
 	//	this code must go away.  I just want to show you how to display the information
 	//	about a robot-box pair or a door.
-//	int robotLoc[][2] = {{12, 8}, {6, 9}, {3, 14}, {11, 15}};
-//	int boxLoc[][2] = {{6, 7}, {4, 12}, {13, 13}, {8, 12}};
-//	int doorAssign[] = {1, 0, 0, 2};	//	door id assigned to each robot-box pair
-//	int doorLoc[][2] = {{3, 3}, {8, 11}, {7, 10}};
+	// int robotLoc[][2] = {{12, 8}, {6, 9}, {3, 14}, {11, 15}};
+	// int boxLoc[][2] = {{6, 7}, {4, 12}, {13, 13}, {8, 12}};
+	// int doorAssign[] = {1, 0, 0, 2};	//	door id assigned to each robot-box pair
+	// int doorLoc[][2] = {{3, 3}, {8, 11}, {7, 10}};
+	sleep(1);
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
 		drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
+	}
+
+	for (int i=0; i<numBoxes; i++)
+	{
+		tick(&robots[i]);
 	}
 
 	for (int i=0; i<numDoors; i++)
@@ -201,10 +208,10 @@ int main(int argc, char** argv)
     }
     
     fprintf(fp, "%d %d %d %d\n\n", numRows, numCols, numBoxes, numDoors);
-//	numRows = 16;
-//	numCols = 20;
-//	numDoors = 3;
-//	numBoxes = 4;
+	// numRows = 16;
+	// numCols = 20;
+	// numDoors = 3;
+	// numBoxes = 4;
 
 	//	Even though we extracted the relevant information from the argument
 	//	list, I still need to pass argc and argv to the front-end init
@@ -271,10 +278,10 @@ void initializeApplication(void)
 	//	and robots, and create threads (not necessarily in that order).
 	//	For the handout I have nothing to do.
     //
-//	int robotLoc[][2] = {{12, 8}, {6, 9}, {3, 14}, {11, 15}};
-//	int boxLoc[][2] = {{6, 7}, {4, 12}, {13, 13}, {8, 12}};
-//	int doorAssign[] = {1, 0, 0, 2};	//	door id assigned to each robot-box pair
-//	int doorLoc[][2] = {{3, 3}, {8, 11}, {7, 10}};
+	// int robotLoc[][2] = {{12, 8}, {6, 9}, {3, 14}, {11, 15}};
+	// int boxLoc[][2] = {{6, 7}, {4, 12}, {13, 13}, {8, 12}};
+	// int doorAssign[] = {1, 0, 0, 2};	//	door id assigned to each robot-box pair
+	// int doorLoc[][2] = {{3, 3}, {8, 11}, {7, 10}};
     //
     int entries = 0;
     int acquiredLoc[numBoxes+numBoxes+numDoors][2];
@@ -297,45 +304,41 @@ void initializeApplication(void)
     
     for (int k=0; k<numBoxes; k++)
         doorAssign[k] = rand() % numDoors;
-  
+
     //  TEST: X Align
-//    robotLoc[0][0] = 1;
-//    robotLoc[0][1] = 1;
-//    boxLoc[0][0] = 2;
-//    boxLoc[0][1] = 1;
-//    doorLoc[0][0] = 0;
-//    doorLoc[0][1] = 1;
+	// robotLoc[0][0] = 1;
+	// robotLoc[0][1] = 1;
+	// boxLoc[0][0] = 2;
+	// boxLoc[0][1] = 1;
+	// doorLoc[0][0] = 0;
+	// doorLoc[0][1] = 1;
     //  TEST: Y Align
-//    robotLoc[0][0] = 1;
-//    robotLoc[0][1] = 1;
-//    boxLoc[0][0] = 1;
-//    boxLoc[0][1] = 2;
-//    doorLoc[0][0] = 1;
-//    doorLoc[0][1] = 0;
-    
-    robot = (Robot*) malloc(sizeof(Robot) * numBoxes);
+	// robotLoc[0][0] = 1;
+	// robotLoc[0][1] = 1;
+	// boxLoc[0][0] = 1;
+	// boxLoc[0][1] = 2;
+	// doorLoc[0][0] = 1;
+	// doorLoc[0][1] = 0;
+	// TEST: Box and Door Y Aligned
+	// robotLoc[0][0] = 4;
+	// robotLoc[0][1] = 0;
+	// boxLoc[0][0] = 2;
+	// boxLoc[0][1] = 1;
+	// doorLoc[0][0] = 2;
+	// doorLoc[0][1] = 5;
+
+    robots = (Robot*) malloc(sizeof(Robot) * numBoxes);
     for (int k = 0; k<numBoxes; k++)
     {
-        robot->boxID = k;
+		Robot* robot = &robots[k];
+        robot->id = k;
         robot->dx_bd = doorLoc[doorAssign[k]][0] - boxLoc[k][0];
         robot->dy_bd = doorLoc[doorAssign[k]][1] - boxLoc[k][1];
-        robot->loc = robotLoc[k];
-        robot->boxLoc = boxLoc[k];
-        
+
         //  decide starting push direction (x direction is prioritized)
         //
-        if (robot->dx_bd < 0)       //  door is westward -dx
-            robot->boxDir = WEST;
-        else if (robot->dx_bd > 0)  //  door is eastward +dx
-            robot->boxDir = EAST;
-        else
-        {
-            if (robot->dy_bd < 0)   //  door is southward -dy
-                robot->boxDir = SOUTH;
-            else                    //  door is northward +dy
-                robot->boxDir = NORTH;
-        }
-        
+		robot->boxDir = setDir(robot->dx_bd, robot->dy_bd);
+
         //  calculate delta x & y for robot's initial travel to box
         //
         switch (robot->boxDir)
@@ -357,33 +360,255 @@ void initializeApplication(void)
                 robot->dy_rb = boxLoc[k][1] - robotLoc[k][1];
                 break;
         }
-        
+
         //  DEBUG
-//        fprintf(stderr, "box %d direction: %d\n", k, robot->boxDir);
-//        fprintf(stderr, "box %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_bd, robot->dy_bd);
-//        fprintf(stderr, "robot %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_rb, robot->dy_rb);
-//        fprintf(stderr, "robotLoc: {%d, %d}\n", robotLoc[k][0], robotLoc[k][1]);
-//        fprintf(stderr, "boxLoc: {%d, %d}\n\n", boxLoc[k][0], boxLoc[k][1]);
-        
-        if (robot->dx_rb < 0)       //  door is westward -dx
-            robot->dir = WEST;
-        else if (robot->dx_rb > 0)  //  door is eastward +dx
-            robot->dir = EAST;
-        else
-        {
-            if (robot->dy_rb < 0)   //  door is southward -dy
-                robot->dir = SOUTH;
-            else                    //  door is northward +dy
-                robot->dir = NORTH;
-        }
-        
-//        fprintf(stderr, "robot %d direction: %d\n", k, robot->dir);
+		// fprintf(stderr, "box %d direction: %d\n", k, robot->boxDir);
+		// fprintf(stderr, "box %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_bd, robot->dy_bd);
+		// fprintf(stderr, "robot %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->dx_rb, robot->dy_rb);
+		// fprintf(stderr, "robotLoc: {%d, %d}\n", robotLoc[k][0], robotLoc[k][1]);
+		// fprintf(stderr, "boxLoc: {%d, %d}\n\n", boxLoc[k][0], boxLoc[k][1]);
+		
+		setAxis(robot);
+
+		// fprintf(stderr, "robot %d direction: %d\n", k, robot->dir);
     }
+}
+
+Direction setDir(int dx, int dy)
+{
+	Direction dir;
+	if (dx < 0)       		//  door is westward -dx
+		dir = WEST;
+	else if (dx > 0)		//  door is eastward +dx
+		dir = EAST;
+	else
+	{
+		if (dy < 0)   		//  door is southward -dy
+			dir = SOUTH;
+		else if (dy > 0)	//  door is northward +dy
+			dir = NORTH;
+	}
+
+	return dir;
+}
+
+void setAxis(Robot* robot)
+{
+	switch (robot->boxDir)
+	{
+		case NORTH:
+			robot->mode = MOVE | Y;
+			if (robot->dy_rb < 0)
+				robot->dir = SOUTH;
+			else if (robot->dy_rb > 0)
+				robot->dir = NORTH;
+			else
+			{
+				robot->dir = setDir(robot->dx_rb, robot->dy_rb);
+				robot->mode = MOVE | X;
+			}
+			break;
+		case WEST:
+			robot->mode = MOVE | X;
+			if (robot->dx_rb < 0)
+				robot->dir = WEST;
+			else if (robot->dx_rb > 0)
+				robot->dir = EAST;
+			else
+			{
+				robot->dir = setDir(robot->dx_rb, robot->dy_rb);
+				robot->mode = MOVE | Y;
+			}
+		case SOUTH:
+			robot->mode = MOVE | Y;
+			if (robot->dy_rb < 0)
+				robot->dir = SOUTH;
+			else if (robot->dy_rb > 0)
+				robot->dir = NORTH;
+			else
+			{
+				robot->dir = setDir(robot->dx_rb, robot->dy_rb);
+				robot->mode = MOVE | X;
+			}
+		case EAST:
+			robot->mode = MOVE | X;
+			if (robot->dx_rb < 0)
+				robot->dir = WEST;
+			else if (robot->dx_rb > 0)
+				robot->dir = EAST;
+			else
+			{
+				robot->dir = setDir(robot->dx_rb, robot->dy_rb);
+				robot->mode = MOVE | Y;
+			}
+			break;
+	}
+}
+
+void adjust(Robot* robot)
+{
+	//	new direction for box
+	robot->boxDir = setDir(robot->dx_bd, robot->dy_bd);
+
+	switch (robot->boxDir)
+	{
+		case NORTH:
+			robot->dx_rb = boxLoc[robot->id][0] - robotLoc[robot->id][0];
+			robot->dy_rb = -1;
+			break;
+		case WEST:
+			robot->dx_rb = 1;
+			robot->dy_rb = boxLoc[robot->id][1] - robotLoc[robot->id][1];
+			break;
+		case SOUTH:
+			robot->dx_rb = boxLoc[robot->id][0] - robotLoc[robot->id][0];
+			robot->dy_rb = 1;
+			break;
+		case EAST:
+			robot->dx_rb = -1;
+			robot->dy_rb = boxLoc[robot->id][1] - robotLoc[robot->id][1];
+			break;
+	}
+}
+
+Direction turn(Mode axis, int delta)
+{
+	Direction dir;
+	switch (axis)
+	{
+		case X:
+			if (delta < 0)
+				dir = WEST;
+			else
+				dir = EAST;
+			break;
+		case Y:
+			if (delta < 0)
+				dir = SOUTH;
+			else
+				dir = NORTH;
+	}
+	return dir;
+}
+
+void move(Robot* robot)
+{
+	switch (robot->dir)
+	{
+		case NORTH:
+			robotLoc[robot->id][1]++;
+			robot->dy_rb--;
+			break;
+		case WEST:
+			robotLoc[robot->id][0]--;
+			robot->dx_rb++;
+			break;
+		case SOUTH:
+			robotLoc[robot->id][1]--;
+			robot->dy_rb++;
+			break;
+		case EAST:
+			robotLoc[robot->id][0]++;
+			robot->dx_rb--;
+			break;
+	}
+	fprintf(fp, "robot %d move %c\n", robot->id, directions[robot->dir]);
+}
+
+void push(Robot* robot)
+{
+	switch (robot->dir)
+	{
+		case NORTH:
+			robotLoc[robot->id][1]++;
+			boxLoc[robot->id][1]++;
+			robot->dy_bd--;
+			break;
+		case WEST:
+			robotLoc[robot->id][0]--;
+			boxLoc[robot->id][0]--;
+			robot->dx_bd++;
+			break;
+		case SOUTH:
+			robotLoc[robot->id][1]--;
+			boxLoc[robot->id][1]--;
+			robot->dy_bd++;
+			break;
+		case EAST:
+			robotLoc[robot->id][0]++;
+			boxLoc[robot->id][0]++;
+			robot->dx_bd--;
+			break;
+	}
+	fprintf(fp, "robot %d push %c\n", robot->id, directions[robot->dir]);
 }
 
 void tick(Robot* robot)
 {
-    
+	if (robot->mode & MOVE)
+	{
+		if (robot->dx_rb == 0 && robot->dy_rb == 0)
+		{
+			if (robot->boxDir == WEST || robot->boxDir == EAST)
+			{
+				robot->dir = turn(X, robot->dx_bd);
+				robot->mode = PUSH | X;
+			}
+			else if (robot->boxDir == NORTH || robot->boxDir == SOUTH)
+			{
+				robot->dir = turn(Y, robot->dy_bd);
+				robot->mode = PUSH | Y;
+			}
+		}
+		else if (robot->dx_rb == 0)
+		{
+			robot->dir = turn(Y, robot->dy_rb);
+			robot->mode = MOVE | Y;
+		}
+		else if (robot->dy_rb == 0)
+		{
+			robot->dir = turn(X, robot->dx_rb);
+			robot->mode = MOVE | X;
+		}
+	}
+	else if (robot->mode & PUSH)
+	{
+		if (robot->dx_bd == 0 && robot->dy_bd == 0)
+		{
+			robot->mode = 0;
+			fprintf(fp, "robot %d end\n", robot->id);
+		}
+		else if (robot->dx_bd == 0 && robot->mode & X)
+		{
+			//	adjust...
+			adjust(robot);
+			robot->dir = turn(Y, robot->dy_rb);
+			robot->mode = MOVE | Y;
+		}
+		else if (robot->dy_bd == 0 && robot->mode & Y)
+		{
+			// adjust...
+			adjust(robot);
+			robot->dir = turn(X, robot->dx_rb);
+			robot->mode = MOVE | X;
+		}
+	}
+
+	switch (robot->mode & (MOVE | PUSH))
+	{
+		case 0:
+			//	end thread
+			break;
+		case MOVE:
+			move(robot);
+			break;
+		case PUSH:
+			push(robot);
+			break;
+		default:
+			printf("error::tick::switch\n");
+			break;
+	}
 }
 
 int assignLoc(int objectCount, int entries, int padding, int **loc, int acquiredLoc[][2])
