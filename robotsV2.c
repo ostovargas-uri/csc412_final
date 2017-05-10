@@ -93,7 +93,8 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
-		drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
+		if (robots[i].isLive)
+			drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
 	}
 
 	for (int i=0; i<numDoors; i++)

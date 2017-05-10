@@ -92,7 +92,8 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
-		drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
+		if (robots[i].isLive)
+			drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
 	}
 
 	for (int i=0; i<numBoxes; i++)
@@ -334,6 +335,7 @@ void initializeApplication(void)
         robot->id = k;
         robot->dx_bd = doorLoc[doorAssign[k]][0] - boxLoc[k][0];
         robot->dy_bd = doorLoc[doorAssign[k]][1] - boxLoc[k][1];
+		robot->isLive = 1;
 
         //  decide starting push direction (x direction is prioritized)
         //
@@ -576,6 +578,7 @@ void tick(Robot* robot)
 		if (robot->dx_bd == 0 && robot->dy_bd == 0)
 		{
 			robot->mode = 0;
+			robot->isLive = 0;
 			fprintf(fp, "robot %d end\n", robot->id);
 		}
 		else if (robot->dx_bd == 0 && robot->mode & X)
