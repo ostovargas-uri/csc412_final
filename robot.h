@@ -33,6 +33,7 @@ typedef struct Robot {
     Direction dir;
     Direction boxDir;   //  direction box needs to be pushed
     int mode;
+    int isLive;
 } Robot;
 
 Direction setDir(int, int);
