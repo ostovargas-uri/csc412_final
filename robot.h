@@ -14,35 +14,46 @@
 //
 #include "gl_frontEnd.h"
 
+extern int** grid;
 extern int numRows;
 extern int numCols;
 
+typedef enum Axis {
+    X = 0,
+    Y
+} Axis;
+
 typedef enum Mode {
-    X = 1,
-    Y = 2,
-    MOVE = 4,
-    PUSH = 8
+    MOVE = 0,
+    PUSH
 } Mode;
+
+typedef struct Box {
+    int xDistanceFromDoor;
+    int yDistanceFromDoor;
+    int* loc;
+    //
+    Direction dir;
+} Box;
 
 typedef struct Robot {
     int id;  //  keep track of robot/box location
-    int dx_rb;      //  delta between robot and box -- x
-    int dy_rb;      //  delta between robot and box -- y
-    int dx_bd;      //  delta between box and door -- x
-    int dy_bd;      //  delta between box and door -- y
-    Direction dir;
-    Direction boxDir;   //  direction box needs to be pushed
-    int mode;
+    int xDistanceFromBox;
+    int yDistanceFromBox;
+    int* loc;
     int isLive;
+    //
+    Direction dir;
+    Axis axis;
+    Mode mode;
+
+    Box box;
 } Robot;
 
-Direction setDir(int, int);
-void setAxis(Robot*);
-void adjust(Robot*);
-Direction turn(Mode, int);
 void move(Robot*);
 void push(Robot*);
-void end();
+void end(Robot*);
+void tick(Robot*);
 void *start(void*); //  multi-threaded
 
 #endif /* robot_h */
