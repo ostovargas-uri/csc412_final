@@ -302,6 +302,13 @@ void initializeApplication(void)
 	// boxLoc[0][1] = 2;
 	// doorLoc[0][0] = 1;
 	// doorLoc[0][1] = 0;
+	//	TEST: Box and Door X Aligned
+	// robotLoc[0][0] = 0;
+	// robotLoc[0][1] = 0;
+	// boxLoc[0][0] = 3;
+	// boxLoc[0][1] = 3;
+	// doorLoc[0][0] = 2;
+	// doorLoc[0][1] = 3;
 	//	TEST: Box and Door Y Aligned
 	// robotLoc[0][0] = 4;
 	// robotLoc[0][1] = 0;
@@ -335,28 +342,11 @@ void initializeApplication(void)
 
 void turn(Robot* robot)
 {
-	if (robot->xDistanceFromBox < 0)
+	//	PATH PLANNING PRECEDENCE
+	//	PRECEDENCE I
+	if (robot->xDistanceFromBox == 0 && robot->yDistanceFromBox == 0)
 	{
-		robot->dir = WEST;
-		robot->axis = X;
-	}
-	else if (robot->xDistanceFromBox > 0)
-	{
-		robot->dir = EAST;
-		robot->axis = X;
-	}
-	else if (robot->yDistanceFromBox < 0)
-	{
-		robot->dir = SOUTH;
-		robot->axis = Y;
-	}
-	else if (robot->yDistanceFromBox > 0)
-	{
-		robot->dir = NORTH;
-		robot->axis = Y;
-	}
-	else	//	robot is behind a box, ready to push.
-	{
+		//	robot is behind a box, ready to push.
 		robot->dir = robot->box.dir;
 		switch (robot->dir)
 		{
@@ -368,7 +358,50 @@ void turn(Robot* robot)
 			case EAST:
 				robot->axis = X;
 				break;
-		}	
+		}
+		return;
+	}
+
+	//	PRECEDENCE II
+	//	pick axis.
+	switch (robot->box.dir)
+	{
+		case NORTH:
+			if (robot->loc[Y] < robot->box.loc[Y])
+				robot->axis = X;
+			else
+				robot->axis = Y;
+			break;
+		case SOUTH:
+			if (robot->loc[Y] > robot->box.loc[Y])
+				robot->axis = X;
+			else
+				robot->axis = Y;
+			break;
+		default:
+			if (robot->xDistanceFromBox == 0)
+				robot->axis = Y;
+			else
+				robot->axis = X;
+			break;
+	}
+	
+	//
+	//	from axis, pick direction.
+	switch (robot->axis)
+	{
+		case X:
+			if (robot->xDistanceFromBox < 0)
+				robot->dir = WEST;
+			else if (robot->xDistanceFromBox > 0)
+				robot->dir = EAST;
+			break;
+		case Y:
+			if (robot->yDistanceFromBox < 0)
+				robot->dir = SOUTH;
+			else if (robot->yDistanceFromBox > 0)
+				robot->dir = NORTH;
+			break;
 	}
 	// fprintf(stderr, "turned to %c\n", directions[robot->dir]);
 }
@@ -376,6 +409,7 @@ void turn(Robot* robot)
 void setPath(Robot* robot)
 {
 	robot->mode = MOVE;
+	
 	//
 	robot->box.xDistanceFromDoor = doorLoc[doorAssign[robot->id]][X] - robot->box.loc[X];
 	robot->box.yDistanceFromDoor = doorLoc[doorAssign[robot->id]][Y] - robot->box.loc[Y];
@@ -455,7 +489,7 @@ void push(Robot* robot)
 	switch (robot->dir)
 	{
 		case NORTH:
-			grid[box_x][box_y++] = 1;	//	is this possible?
+			grid[box_x][box_y++] = 1;	//	can we move to that grid space?
 			grid[box_x][box_y-1] = 0;	//	yes, release current spot.
 			//
 			grid[robot_x][robot_y++] = 1;
