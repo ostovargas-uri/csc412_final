@@ -89,10 +89,15 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		pthread_mutex_lock(&robot_mtx[i]);
+		int robot_y = robotLoc[i][1];
+		int robot_x = robotLoc[i][0];
+		int box_y = boxLoc[i][1];
+		int box_x = boxLoc[i][0];
+		pthread_mutex_unlock(&robot_mtx[i]);
+		
 		//	here I would test if the robot thread is still live
 		if (robots[i].isLive)
-			drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
-		pthread_mutex_unlock(&robot_mtx[i]);
+			drawRobotAndBox(i, robot_y, robot_x, box_y, box_x, doorAssign[i]);
 	}
 
 	for (int i=0; i<numDoors; i++)
@@ -275,6 +280,7 @@ void initializeApplication(void)
 	}
 
 	robot_mtx = (pthread_mutex_t*) malloc(sizeof(pthread_mutex_t) * numBoxes);
+
 	//---------------------------------------------------------------
 	//	All the code below to be replaced/removed
 	//	I initialize the grid's pixels to have something to look at
@@ -346,7 +352,6 @@ void initializeApplication(void)
 		//
 		robot->isLive = 1;
 		//
-		pthread_mutex_init(&robot_mtx[k], NULL);
 
 		setPath(robot);
 
@@ -358,8 +363,9 @@ void initializeApplication(void)
 		// fprintf(stderr, "robot %d trajected travel:\n\tx: %3d\n\ty: %3d\n", k, robot->xDistanceFromBox, robot->yDistanceFromBox);
 		// fprintf(stderr, "robotLoc: {%d, %d}\n", robotLoc[k][0], robotLoc[k][1]);
 
-		pthread_mutex_lock(&grid_mtx[robot->loc[X]][robot->loc[Y]]);
-		pthread_mutex_lock(&grid_mtx[robot->box.loc[X]][robot->box.loc[Y]]);
+		pthread_mutex_init(&robot_mtx[k], NULL);
+		pthread_mutex_lock(&grid_mtx[robot->loc[Y]][robot->loc[X]]);
+		pthread_mutex_lock(&grid_mtx[robot->box.loc[Y]][robot->box.loc[X]]);
 		pthread_create(thread + k, NULL, start, (void*) robot);
 	}
 }
@@ -377,14 +383,14 @@ void assignLocation(int object_count, int padding, int** loc)
         {
             x = rand() % (numCols - padding * 2) + padding;
             y = rand() % (numRows - padding * 2) + padding;
-            match = grid[x][y] == 1 ? 1 : 0;
+            match = grid[y][x] == 1 ? 1 : 0;
         }
         
         //
         loc[k] = (int*) malloc(sizeof(void*) * 2);
         loc[k][0] = x;  //  x
         loc[k][1] = y;  //  y
-		grid[x][y] = 1;
+		grid[y][x] = 1;
         //
         fprintf(fp, "{%d, %d}\n", x, y);
     }
@@ -515,11 +521,11 @@ void move(Robot* robot)
 	switch (robot->dir)
 	{
 		case NORTH:
-			pthread_mutex_lock(&grid_mtx[x][y+1]);
-			grid[x][y] = 0;
-			pthread_mutex_unlock(&grid_mtx[x][y]);
+			pthread_mutex_lock(&grid_mtx[y+1][x]);
+			grid[y][x] = 0;
+			pthread_mutex_unlock(&grid_mtx[y][x]);
 			//
-			grid[x][y++] = 1;
+			grid[y++][x] = 1;
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[Y] = y;
 			pthread_mutex_unlock(&robot_mtx[robot->id]);
@@ -527,11 +533,11 @@ void move(Robot* robot)
 
 			break;
 		case WEST:
-			pthread_mutex_lock(&grid_mtx[x-1][y]);
-			grid[x][y] = 0;
-			pthread_mutex_unlock(&grid_mtx[x][y]);
+			pthread_mutex_lock(&grid_mtx[y][x-1]);
+			grid[y][x] = 0;
+			pthread_mutex_unlock(&grid_mtx[y][x]);
 			//
-			grid[x--][y] = 1;
+			grid[y][x--] = 1;
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[X] = x;
 			pthread_mutex_unlock(&robot_mtx[robot->id]);
@@ -539,10 +545,10 @@ void move(Robot* robot)
 
 			break;
 		case SOUTH:
-			pthread_mutex_lock(&grid_mtx[x][y-1]);
-			grid[x][y] = 0;
-			pthread_mutex_unlock(&grid_mtx[x][y]);
-			grid[x][y--] = 1;
+			pthread_mutex_lock(&grid_mtx[y-1][x]);
+			grid[y][x] = 0;
+			pthread_mutex_unlock(&grid_mtx[y][x]);
+			grid[y--][x] = 1;
 			//
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[Y] = y;
@@ -551,11 +557,11 @@ void move(Robot* robot)
 
 			break;
 		case EAST:
-			pthread_mutex_lock(&grid_mtx[x+1][y]);
-			grid[x][y] = 0;
-			pthread_mutex_unlock(&grid_mtx[x][y]);
+			pthread_mutex_lock(&grid_mtx[y][x+1]);
+			grid[y][x] = 0;
+			pthread_mutex_unlock(&grid_mtx[y][x]);
 			//
-			grid[x++][y] = 1;
+			grid[y][x++] = 1;
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[X] = x;
 			pthread_mutex_unlock(&robot_mtx[robot->id]);
@@ -580,14 +586,14 @@ void push(Robot* robot)
 	switch (robot->dir)
 	{
 		case NORTH:
-			pthread_mutex_lock(&grid_mtx[box_x][box_y+1]);
-			grid[box_x][box_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[box_x][box_y]);
-			grid[box_x][box_y++] = 1;
-			pthread_mutex_lock(&grid_mtx[robot_x][robot_y+1]);
-			grid[robot_x][robot_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[robot_x][robot_y]);
-			grid[robot_x][robot_y++] = 1;
+			pthread_mutex_lock(&grid_mtx[box_y+1][box_x]);
+			grid[box_y][box_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[box_y][box_x]);
+			grid[box_y++][box_x] = 1;
+			pthread_mutex_lock(&grid_mtx[robot_y+1][robot_x]);
+			grid[robot_y][robot_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[robot_y][robot_x]);
+			grid[robot_y++][robot_x] = 1;
 			//
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[Y] = robot_y;
@@ -597,14 +603,14 @@ void push(Robot* robot)
 
 			break;
 		case WEST:
-			pthread_mutex_lock(&grid_mtx[box_x-1][box_y]);
-			grid[box_x][box_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[box_x][box_y]);
-			grid[box_x--][box_y] = 1;
-			pthread_mutex_lock(&grid_mtx[robot_x-1][robot_y]);
-			grid[robot_x][robot_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[robot_x][robot_y]);
-			grid[robot_x--][robot_y] = 1;
+			pthread_mutex_lock(&grid_mtx[box_y][box_x-1]);
+			grid[box_y][box_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[box_y][box_x]);
+			grid[box_y][box_x--] = 1;
+			pthread_mutex_lock(&grid_mtx[robot_y][robot_x-1]);
+			grid[robot_y][robot_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[robot_y][robot_x]);
+			grid[robot_y][robot_x--] = 1;
 			//
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[X] = robot_x;
@@ -614,14 +620,14 @@ void push(Robot* robot)
 
 			break;
 		case SOUTH:
-			pthread_mutex_lock(&grid_mtx[box_x][box_y-1]);
-			grid[box_x][box_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[box_x][box_y]);
-			grid[box_x][box_y--] = 1;
-			pthread_mutex_lock(&grid_mtx[robot_x][robot_y-1]);
-			grid[robot_x][robot_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[robot_x][robot_y]);
-			grid[robot_x][robot_y--] = 1;
+			pthread_mutex_lock(&grid_mtx[box_y-1][box_x]);
+			grid[box_y][box_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[box_y][box_x]);
+			grid[box_y--][box_x] = 1;
+			pthread_mutex_lock(&grid_mtx[robot_y-1][robot_x]);
+			grid[robot_y][robot_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[robot_y][robot_x]);
+			grid[robot_y--][robot_x] = 1;
 			//
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[Y] = robot_y;
@@ -631,14 +637,14 @@ void push(Robot* robot)
 
 			break;
 		case EAST:
-			pthread_mutex_lock(&grid_mtx[box_x+1][box_y]);
-			grid[box_x][box_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[box_x][box_y]);
-			grid[box_x++][box_y] = 1;
-			pthread_mutex_lock(&grid_mtx[robot_x+1][robot_y]);
-			grid[robot_x][robot_y] = 0;
-			pthread_mutex_unlock(&grid_mtx[robot_x][robot_y]);
-			grid[robot_x++][robot_y] = 1;			
+			pthread_mutex_lock(&grid_mtx[box_y][box_x+1]);
+			grid[box_y][box_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[box_y][box_x]);
+			grid[box_y][box_x++] = 1;
+			pthread_mutex_lock(&grid_mtx[robot_y][robot_x+1]);
+			grid[robot_y][robot_x] = 0;
+			pthread_mutex_unlock(&grid_mtx[robot_y][robot_x]);
+			grid[robot_y][robot_x++] = 1;			
 			//
 			pthread_mutex_lock(&robot_mtx[robot->id]);
 			robot->loc[X] = robot_x;
@@ -663,10 +669,10 @@ void end(Robot* robot)
 	robot->isLive = 0;
 	pthread_mutex_unlock(&robot_mtx[robot->id]);
 
-	pthread_mutex_unlock(&grid_mtx[box_x][box_y]);
-	pthread_mutex_unlock(&grid_mtx[robot_x][robot_y]);
-	grid[robot_x][robot_y] = 0;
-	grid[box_x][box_y] = 0;
+	pthread_mutex_unlock(&grid_mtx[box_y][box_x]);
+	pthread_mutex_unlock(&grid_mtx[robot_y][robot_x]);
+	grid[robot_y][robot_x] = 0;
+	grid[box_y][box_x] = 0;
 	//
 	pthread_mutex_lock(&state_mtx);
 	numLiveThreads--;
