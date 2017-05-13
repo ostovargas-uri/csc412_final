@@ -340,6 +340,34 @@ void initializeApplication(void)
     }
 }
 
+void assignLocation(int object_count, int padding, int** loc)
+{
+    for (int k=0; k<object_count; k++)
+    {
+        int x;
+        int y;
+        //
+        //  Making sure the robots/boxes/doors don't occupy an acquired space.
+        int match = 1;
+        while (match)
+        {
+            x = rand() % (numCols - padding * 2) + padding;
+            y = rand() % (numRows - padding * 2) + padding;
+            match = grid[x][y] == 1 ? 1 : 0;
+        }
+        
+        //
+        loc[k] = (int*) malloc(sizeof(void*) * 2);
+        loc[k][0] = x;  //  x
+        loc[k][1] = y;  //  y
+		grid[x][y] = 1;
+        //
+        fprintf(fp, "{%d, %d}\n", x, y);
+    }
+    //
+    fprintf(fp, "\n");
+}
+
 void turn(Robot* robot)
 {
 	//	PATH PLANNING PRECEDENCE
@@ -606,34 +634,6 @@ void tick(Robot* robot)
 			push(robot);
 			break;
 	}
-}
-
-void assignLocation(int object_count, int padding, int** loc)
-{
-    for (int k=0; k<object_count; k++)
-    {
-        int x;
-        int y;
-        //
-        //  Making sure the robots/boxes/doors don't occupy an acquired space.
-        int match = 1;
-        while (match)
-        {
-            x = rand() % (numCols - padding * 2) + padding;
-            y = rand() % (numRows - padding * 2) + padding;
-            match = grid[x][y] == 1 ? 1 : 0;
-        }
-        
-        //
-        loc[k] = (int*) malloc(sizeof(void*) * 2);
-        loc[k][0] = x;  //  x
-        loc[k][1] = y;  //  y
-		grid[x][y] = 1;
-        //
-        fprintf(fp, "{%d, %d}\n", x, y);
-    }
-    //
-    fprintf(fp, "\n");
 }
 
 
