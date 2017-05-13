@@ -360,14 +360,14 @@ void assignLocation(int object_count, int padding, int** loc)
         {
             x = rand() % (numCols - padding * 2) + padding;
             y = rand() % (numRows - padding * 2) + padding;
-            match = grid[x][y] == 1 ? 1 : 0;
+            match = grid[y][x] == 1 ? 1 : 0;
         }
         
         //
         loc[k] = (int*) malloc(sizeof(void*) * 2);
         loc[k][0] = x;  //  x
         loc[k][1] = y;  //  y
-		grid[x][y] = 1;
+		grid[y][x] = 1;
         //
         fprintf(fp, "{%d, %d}\n", x, y);
     }
@@ -496,29 +496,29 @@ void move(Robot* robot)
 	switch (robot->dir)
 	{
 		case NORTH:
-			grid[x][y++] = 1;
-			grid[x][y-1] = 0;
+			grid[y][x] = 0;
+			grid[y++][x] = 1;
 			robot->loc[Y] = y;
 			robot->yDistanceFromBox--;
 
 			break;
 		case WEST:
-			grid[x--][y] = 1;
-			grid[x+1][y] = 0;
+			grid[y][x] = 0;
+			grid[y][x--] = 1;
 			robot->loc[X] = x;
 			robot->xDistanceFromBox++;
 
 			break;
 		case SOUTH:
-			grid[x][y--] = 1;
-			grid[x][y+1] = 0;
+			grid[y][x] = 0;
+			grid[y--][x] = 1;
 			robot->loc[Y] = y;
 			robot->yDistanceFromBox++;
 
 			break;
 		case EAST:
-			grid[x++][y] = 1;
-			grid[x-1][y] = 0;
+			grid[y][x] = 0;
+			grid[y][x++] = 1;
 			robot->loc[X] = x;
 			robot->xDistanceFromBox--;
 
@@ -539,11 +539,10 @@ void push(Robot* robot)
 	switch (robot->dir)
 	{
 		case NORTH:
-			grid[box_x][box_y++] = 1;	//	can we move to that grid space?
-			grid[box_x][box_y-1] = 0;	//	yes, release current spot.
-			//
-			grid[robot_x][robot_y++] = 1;
-			grid[robot_x][robot_y-1] = 0;
+			grid[box_y][box_x] = 0;
+			grid[box_y++][box_x] = 1;
+			grid[robot_y][robot_x] = 0;
+			grid[robot_y++][robot_x] = 1;
 			//
 			robot->loc[Y] = robot_y;
 			robot->box.loc[Y] = box_y;
@@ -551,11 +550,10 @@ void push(Robot* robot)
 
 			break;
 		case WEST:
-			grid[box_x--][box_y] = 1;
-			grid[box_x+1][box_y] = 0;
-			//
-			grid[robot_x--][robot_y] = 1;
-			grid[robot_x+1][robot_y] = 0;
+			grid[box_y][box_x] = 0;
+			grid[box_y][box_x--] = 1;
+			grid[robot_y][robot_x] = 0;
+			grid[robot_y][robot_x--] = 1;
 			//
 			robot->loc[X] = robot_x;
 			robot->box.loc[X] = box_x;
@@ -563,11 +561,10 @@ void push(Robot* robot)
 
 			break;
 		case SOUTH:
-			grid[box_x][box_y--] = 1;
-			grid[box_x][box_y+1] = 0;
-			//
-			grid[robot_x][robot_y--] = 1;
-			grid[robot_x][robot_y+1] = 0;
+			grid[box_y][box_x] = 0;
+			grid[box_y--][box_x] = 1;
+			grid[robot_y][robot_x] = 0;
+			grid[robot_y--][robot_x] = 1;
 			//
 			robot->loc[Y] = robot_y;
 			robot->box.loc[Y] = box_y;
@@ -575,11 +572,10 @@ void push(Robot* robot)
 
 			break;
 		case EAST:
-			grid[box_x++][box_y] = 1;
-			grid[box_x-1][box_y] = 0;
-			//
-			grid[robot_x++][robot_y] = 1;
-			grid[robot_x-1][robot_y] = 0;
+			grid[box_y][box_x] = 0;
+			grid[box_y][box_x++] = 1;
+			grid[robot_y][robot_x] = 0;
+			grid[robot_y][robot_x++] = 1;			
 			//
 			robot->loc[X] = robot_x;
 			robot->box.loc[X] = box_x;
@@ -598,10 +594,10 @@ void end(Robot* robot)
 	int robot_y = robot->loc[Y];
 	int box_x = robot->box.loc[X];
 	int box_y = robot->box.loc[Y];
-
-	grid[robot_x][robot_y] = 0;
-	grid[box_x][box_y] = 0;
 	robot->isLive = 0;
+
+	grid[robot_y][robot_x] = 0;
+	grid[box_y][box_x] = 0;
 	//
 	pthread_mutex_lock(&state_mtx);
 	numLiveThreads--;
