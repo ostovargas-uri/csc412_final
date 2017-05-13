@@ -542,6 +542,13 @@ void push(Robot* robot)
 
 void end(Robot* robot)
 {
+	int robot_x = robot->loc[X];
+	int robot_y = robot->loc[Y];
+	int box_x = robot->box.loc[X];
+	int box_y = robot->box.loc[Y];
+
+	grid[robot_x][robot_y] = 0;
+	grid[box_x][box_y] = 0;
 	robot->isLive = 0;
 	fprintf(fp, "robot %d end\n", robot->id);
 }
